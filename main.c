@@ -4,6 +4,8 @@
 #include <stdint.h>
 #include <sys/ipc.h>
 #include <sys/shm.h>
+#include <stdio.h>
+#include <math.h>
 #define SHM_KEY 12345
 
 #define ACC_UPDATE		0x01
@@ -11,11 +13,13 @@
 #define ANGLE_UPDATE	0x04
 #define MAG_UPDATE		0x08
 #define READ_UPDATE		0x80
+#define IS_VALID_FLOAT(val) (!isnan(val))
+#define IS_VALID_INT(val)   (val != 0)
 
 struct shared_data {
-    long shm_fAcc[3];  
-    long shm_fGyro[3]; 
-    long shm_fAngle[3]; 
+    float shm_fAcc[3];  
+    float shm_fGyro[3]; 
+    float shm_fAngle[3]; 
     int shm_sReg[3];  
 };
 
@@ -60,42 +64,86 @@ int add_to_memory(){
             
             if (s_cDataUpdate & ACC_UPDATE)
             {
+                float acc_x = sReg[AX] / 32768.0f * 16.0f;
+                float acc_y = sReg[AX + 1] / 32768.0f * 16.0f;
+                float acc_z = sReg[AX + 2] / 32768.0f * 16.0f;
+
+                if (IS_VALID_FLOAT(acc_x) && IS_VALID_FLOAT(acc_y) && IS_VALID_FLOAT(acc_z))
+                {
+                    shm_data->shm_fAcc[0] = acc_x;
+                    shm_data->shm_fAcc[1] = acc_y;
+                    shm_data->shm_fAcc[2] = acc_z;
+                }
                 // Using shm_fAcc instead of fAcc
-                shm_data->shm_fAcc[0] = sReg[AX] / 32768.0f * 16.0f;
-                shm_data->shm_fAcc[1] = sReg[AX + 1] / 32768.0f * 16.0f;
-                shm_data->shm_fAcc[2] = sReg[AX + 2] / 32768.0f * 16.0f;
-                // printf("acc:%.3ld %.3ld %.3ld\r\n", shm_data->shm_fAcc[0], shm_data->shm_fAcc[1], shm_data->shm_fAcc[2]);
-                s_cDataUpdate &= ~ACC_UPDATE;  // Clear the flag
+                // shm_data->shm_fAcc[0] = sReg[AX] / 32768.0f * 16.0f;
+                // shm_data->shm_fAcc[1] = sReg[AX + 1] / 32768.0f * 16.0f;
+                // shm_data->shm_fAcc[2] = sReg[AX + 2] / 32768.0f * 16.0f;
+                // printf("acc:%f %f %f\r\n", shm_data->shm_fAcc[0], shm_data->shm_fAcc[1], shm_data->shm_fAcc[2]);
+                //s_cDataUpdate &= ~ACC_UPDATE;  // Clear the flag
             }
         
             // Update gyroscope data
             if (s_cDataUpdate & GYRO_UPDATE)
             {
-                shm_data->shm_fGyro[0] = sReg[GX] / 32768.0f * 2000.0f;
-                shm_data->shm_fGyro[1] = sReg[GX + 1] / 32768.0f * 2000.0f;
-                shm_data->shm_fGyro[2] = sReg[GX + 2] / 32768.0f * 2000.0f;
-                // printf("gyro:%.3ld %.3ld %.3ld\r\n", shm_data->shm_fGyro[0], shm_data->shm_fGyro[1], shm_data->shm_fGyro[2]);
-                s_cDataUpdate &= ~GYRO_UPDATE;  // Clear the flag
+                float gyro_x = sReg[GX] / 32768.0f * 2000.0f;
+                float gyro_y = sReg[GX + 1] / 32768.0f * 2000.0f;
+                float gyro_z = sReg[GX + 2] / 32768.0f * 2000.0f;
+
+                if (IS_VALID_FLOAT(gyro_x) && IS_VALID_FLOAT(gyro_y) && IS_VALID_FLOAT(gyro_z))
+                {
+                    shm_data->shm_fGyro[0] = gyro_x;
+                    shm_data->shm_fGyro[1] = gyro_y;
+                    shm_data->shm_fGyro[2] = gyro_z;
+                    s_cDataUpdate &= ~GYRO_UPDATE;
+                }
+                // shm_data->shm_fGyro[0] = sReg[GX] / 32768.0f * 2000.0f;
+                // shm_data->shm_fGyro[1] = sReg[GX + 1] / 32768.0f * 2000.0f;
+                // shm_data->shm_fGyro[2] = sReg[GX + 2] / 32768.0f * 2000.0f;
+                // printf("gyro:%f %f %f\r\n", shm_data->shm_fGyro[0], shm_data->shm_fGyro[1], shm_data->shm_fGyro[2]);
+                // s_cDataUpdate &= ~GYRO_UPDATE;  // Clear the flag
             }
         
             // Update angle data
             if (s_cDataUpdate & ANGLE_UPDATE)
             {
-                shm_data->shm_fAngle[0] = sReg[Roll] / 32768.0f * 180.0f;
-                shm_data->shm_fAngle[1] = sReg[Roll + 1] / 32768.0f * 180.0f;
-                shm_data->shm_fAngle[2] = sReg[Roll + 2] / 32768.0f * 180.0f;
-                // printf("angle:%.3ld %.3ld %.3ld\r\n", shm_data->shm_fAngle[0], shm_data->shm_fAngle[1], shm_data->shm_fAngle[2]);
-                s_cDataUpdate &= ~ANGLE_UPDATE;  // Clear the flag
+                float angle_x = sReg[Roll] / 32768.0f * 180.0f;
+                float angle_y = sReg[Roll + 1] / 32768.0f * 180.0f;
+                float angle_z = sReg[Roll + 2] / 32768.0f * 180.0f;
+
+                if (IS_VALID_FLOAT(angle_x) && IS_VALID_FLOAT(angle_y) && IS_VALID_FLOAT(angle_z))
+                {
+                    shm_data->shm_fAngle[0] = angle_x;
+                    shm_data->shm_fAngle[1] = angle_y;
+                    shm_data->shm_fAngle[2] = angle_z;
+                    s_cDataUpdate &= ~ANGLE_UPDATE;
+                }
+                // shm_data->shm_fAngle[0] = sReg[Roll] / 32768.0f * 180.0f;
+                // shm_data->shm_fAngle[1] = sReg[Roll + 1] / 32768.0f * 180.0f;
+                // shm_data->shm_fAngle[2] = sReg[Roll + 2] / 32768.0f * 180.0f;
+                // // printf("angle:%f %f %f\r\n", shm_data->shm_fAngle[0], shm_data->shm_fAngle[1], shm_data->shm_fAngle[2]);
+                // s_cDataUpdate &= ~ANGLE_UPDATE;  // Clear the flag
             }
         
             // Update magnetometer data
             if (s_cDataUpdate & MAG_UPDATE)
             {
-                shm_data->shm_sReg[0] = sReg[HX];
-                shm_data->shm_sReg[1] = sReg[HY];
-                shm_data->shm_sReg[2] = sReg[HZ];
-                // printf("mag : %d %d %d\r\n", sReg[HX], sReg[HY], sReg[HZ]);
-                s_cDataUpdate &= ~MAG_UPDATE;  // Clear the flag
+                
+                int hx = sReg[HX];
+                int hy = sReg[HY];
+                int hz = sReg[HZ];
+
+                if (IS_VALID_INT(hx) && IS_VALID_INT(hy) && IS_VALID_INT(hz))
+                {
+                    shm_data->shm_sReg[0] = hx;
+                    shm_data->shm_sReg[1] = hy;
+                    shm_data->shm_sReg[2] = hz;
+                    s_cDataUpdate &= ~MAG_UPDATE;
+                }
+                // shm_data->shm_sReg[0] = sReg[HX];
+                // shm_data->shm_sReg[1] = sReg[HY];
+                // shm_data->shm_sReg[2] = sReg[HZ];
+                // // printf("mag : %d %d %d\r\n", sReg[HX], sReg[HY], sReg[HZ]);
+                // s_cDataUpdate &= ~MAG_UPDATE;  // Clear the flag
             }
     }
 }
@@ -150,8 +198,8 @@ static void SensorDataUpdata(uint32_t uiReg, uint32_t uiRegNum)
     {
         switch(uiReg)
         {
-//            case AX:
-//            case AY:
+        //    case AX:
+        //    case AY:
             case AZ:
 				s_cDataUpdate |= ACC_UPDATE;
             break;

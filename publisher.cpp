@@ -11,9 +11,9 @@
 #define SHM_KEY 12345
 
 struct shared_data {
-    long fAcc[3];
-    long fGyro[3];
-    long fAngle[3];
+    float fAcc[3];
+    float fGyro[3];
+    float fAngle[3];
     int sReg[3];
 };
 struct shared_data *shm_data;
@@ -28,7 +28,7 @@ public:
         mag_publisher_ = this->create_publisher<std_msgs::msg::Float32MultiArray>("mag_data", 10);
         
         timer_ = this->create_wall_timer(
-            std::chrono::milliseconds(250),
+            std::chrono::milliseconds(200),
             std::bind(&SensorPublisherNode::publish_data, this));
     }
 
@@ -47,6 +47,7 @@ private:
         imu_msg.orientation.x = shm_data->fAngle[0];  // roll
         imu_msg.orientation.y = shm_data->fAngle[1];  // pitch
         imu_msg.orientation.z = shm_data->fAngle[2];  // yaw
+        imu_msg.orientation.w = 1.0;
 
         imu_publisher_->publish(imu_msg);
         // RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", std::to_string(shm_data->fAngle[1]).c_str());
