@@ -6,6 +6,7 @@
 #include <sys/shm.h>
 #include <stdio.h>
 #include <math.h>
+//compile this code on the microcontroller before running
 #define SHM_KEY 12345
 
 #define ACC_UPDATE		0x01
@@ -16,6 +17,7 @@
 #define IS_VALID_FLOAT(val) (!isnan(val))
 #define IS_VALID_INT(val)   (val != 0)
 
+//structure for shared memory 
 struct shared_data {
     float shm_fAcc[3];  
     float shm_fGyro[3]; 
@@ -59,7 +61,7 @@ void cleanup_shared_memory() {
     }
 }
 int add_to_memory(){
-    if (s_cDataUpdate & ACC_UPDATE)
+    if (s_cDataUpdate)
         {
             
             if (s_cDataUpdate & ACC_UPDATE)
@@ -73,12 +75,13 @@ int add_to_memory(){
                     shm_data->shm_fAcc[0] = acc_x;
                     shm_data->shm_fAcc[1] = acc_y;
                     shm_data->shm_fAcc[2] = acc_z;
+                    // printf("acc:%f %f %f\r\n", shm_data->shm_fAcc[0], shm_data->shm_fAcc[1], shm_data->shm_fAcc[2]);
                 }
                 // Using shm_fAcc instead of fAcc
                 // shm_data->shm_fAcc[0] = sReg[AX] / 32768.0f * 16.0f;
                 // shm_data->shm_fAcc[1] = sReg[AX + 1] / 32768.0f * 16.0f;
                 // shm_data->shm_fAcc[2] = sReg[AX + 2] / 32768.0f * 16.0f;
-                // printf("acc:%f %f %f\r\n", shm_data->shm_fAcc[0], shm_data->shm_fAcc[1], shm_data->shm_fAcc[2]);
+                // 
                 //s_cDataUpdate &= ~ACC_UPDATE;  // Clear the flag
             }
         
@@ -198,23 +201,23 @@ static void SensorDataUpdata(uint32_t uiReg, uint32_t uiRegNum)
     {
         switch(uiReg)
         {
-        //    case AX:
-        //    case AY:
+           case AX:
+           case AY:
             case AZ:
 				s_cDataUpdate |= ACC_UPDATE;
             break;
-//            case GX:
-//            case GY:
+           case GX:
+           case GY:
             case GZ:
 				s_cDataUpdate |= GYRO_UPDATE;
             break;
-//            case HX:
-//            case HY:
+           case HX:
+           case HY:
             case HZ:
 				s_cDataUpdate |= MAG_UPDATE;
             break;
-//            case Roll:
-//            case Pitch:
+           case Roll:
+           case Pitch:
             case Yaw:
 				s_cDataUpdate |= ANGLE_UPDATE;
             break;
